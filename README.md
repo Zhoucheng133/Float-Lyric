@@ -6,5 +6,9 @@
 
 ```bash
 cd macos &&
-swiftc -emit-library -o libf.dylib main.swift
+xcrun swiftc \
+  -target arm64-apple-macosx13.0 \
+  -emit-library \
+  -o libFloatLyric.dylib \
+  main.swift
 ```
