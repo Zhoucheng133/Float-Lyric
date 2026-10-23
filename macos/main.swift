@@ -55,7 +55,7 @@ class FloatCloseButton: NSView {
         layer?.cornerRadius = 4.0
         layer?.backgroundColor = NSColor.clear.cgColor
         
-        label.textColor = .white
+        label.textColor = NSColor.gray
         label.alignment = .center
         label.font = .systemFont(ofSize: 18, weight: .bold)
         label.isEditable = false
