@@ -29,7 +29,7 @@ class FloatLyricManager {
                 panel.isFloatingPanel = true
                 panel.level = .floating
                 panel.isOpaque = false
-                panel.hasShadow = true
+                panel.hasShadow = false
                 panel.hidesOnDeactivate = false
                 panel.isMovableByWindowBackground = true
                 
