@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'components/bridge.dart';
 
@@ -20,6 +21,26 @@ class _MainAppState extends State<MainApp> {
   final TextEditingController fontsize = TextEditingController(text: "20");
   double opacity = 0.7;
   bool show=false;
+  NativeCallable<CloseCallbackFFI>? _closeCallable;
+
+  @override
+  void initState() {
+    super.initState();
+    _closeCallable = NativeCallable<CloseCallbackFFI>.listener(() {
+      setState(() {
+        show = false;
+      });
+    });
+    FFIBridge.registerCloseCallback(_closeCallable!.nativeFunction);
+  }
+
+  @override
+  void dispose() {
+    _closeCallable?.close();
+    lyric.dispose();
+    fontsize.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -28,6 +28,13 @@ typedef UpdateOpacity = Void Function(Double opacity);
 typedef UpdateFontSizeDart = void Function(int fontsize);
 typedef UpdateFontSize = Void Function(Int fontsize);
 
+// 注册关闭回调
+typedef CloseCallbackDart = void Function();
+typedef CloseCallbackFFI = Void Function();
+
+typedef RegisterCloseCallbackDart = void Function(Pointer<NativeFunction<CloseCallbackFFI>> callback);
+typedef RegisterCloseCallback = Void Function(Pointer<NativeFunction<CloseCallbackFFI>> callback);
+
 class FFIBridge {
   static final DynamicLibrary _dylib = _openDylib();
 
@@ -57,4 +64,8 @@ class FFIBridge {
   static final UpdateFontSizeDart updateFontSize = _dylib
       .lookup<NativeFunction<UpdateFontSize>>('UpdateFontSize')
       .asFunction<UpdateFontSizeDart>();
+
+  static final RegisterCloseCallbackDart registerCloseCallback = _dylib
+      .lookup<NativeFunction<RegisterCloseCallback>>('RegisterCloseCallback')
+      .asFunction<RegisterCloseCallbackDart>();
 }

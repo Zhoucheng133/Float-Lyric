@@ -1,12 +1,19 @@
 import AppKit
 
+public typealias CloseCallback = @convention(c) () -> Void
+
 class FloatLyricManager {
     static let shared = FloatLyricManager()
     
     private var window: NSPanel?
     private var textField: NSTextField?
+    private var closeCallback: CloseCallback?
     
     private init() {}
+    
+    func setCloseCallback(_ callback: @escaping CloseCallback) {
+        self.closeCallback = callback
+    }
     
     func show(lyric: String, opacity: Double, fontsize: Int32) {
         DispatchQueue.main.async {
@@ -48,10 +55,28 @@ class FloatLyricManager {
                 label.translatesAutoresizingMaskIntoConstraints = false
                 
                 container.addSubview(label)
+                
+                let closeButton = NSButton(frame: .zero)
+                closeButton.title = "×"
+                closeButton.bezelStyle = .regularSquare
+                closeButton.isBordered = false
+                closeButton.contentTintColor = .white
+                closeButton.font = .systemFont(ofSize: 18, weight: .bold)
+                closeButton.target = self
+                closeButton.action = #selector(self.handleCloseClick)
+                closeButton.translatesAutoresizingMaskIntoConstraints = false
+                
+                container.addSubview(closeButton)
+                
                 NSLayoutConstraint.activate([
                     label.centerXAnchor.constraint(equalTo: container.centerXAnchor),
                     label.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-                    label.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor, constant: -20)
+                    label.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor, constant: -60),
+                    
+                    closeButton.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+                    closeButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+                    closeButton.widthAnchor.constraint(equalToConstant: 24),
+                    closeButton.heightAnchor.constraint(equalToConstant: 24)
                 ])
                 
                 panel.contentView = container
@@ -66,6 +91,11 @@ class FloatLyricManager {
                 self.window?.orderFrontRegardless()
             }
         }
+    }
+    
+    @objc private func handleCloseClick() {
+        hide()
+        closeCallback?()
     }
     
     func hide() {
@@ -126,4 +156,9 @@ public func UpdateOpacity(_ opacity: Double) {
 @_cdecl("UpdateFontSize")
 public func UpdateFontSize(_ fontsize: Int32) {
     manager.updateFontSize(fontsize)
+}
+
+@_cdecl("RegisterCloseCallback")
+public func RegisterCloseCallback(_ callback: @convention(c) @escaping () -> Void) {
+    manager.setCloseCallback(callback)
 }
