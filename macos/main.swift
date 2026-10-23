@@ -111,7 +111,8 @@ class FloatLyricManager {
     static let shared = FloatLyricManager()
     
     private var window: NSPanel?
-    private var textField: NSTextField?
+    private var strokeTextField: NSTextField?
+    private var fillTextField: NSTextField?
     private var closeCallback: CloseCallback?
     
     private init() {}
@@ -150,16 +151,35 @@ class FloatLyricManager {
                 
                 let container = FloatLyricContainerView(frame: NSRect(x: 0, y: 0, width: width, height: height))
                 
-                let label = NSTextField(labelWithString: lyric)
-                label.textColor = .white
-                label.alignment = .center
-                label.font = .systemFont(ofSize: CGFloat(fontsize > 0 ? fontsize : 16))
-                label.isEditable = false
-                label.isSelectable = false
-                label.drawsBackground = false
-                label.translatesAutoresizingMaskIntoConstraints = false
+                let fontSize = CGFloat(fontsize > 0 ? fontsize : 16)
+                let font = NSFont.systemFont(ofSize: fontSize)
+                let strokeColor = NSColor(red: 24/255.0, green: 144/255.0, blue: 255/255.0, alpha: 1.0)
                 
-                container.addSubview(label)
+                let strokeLabel = NSTextField(labelWithString: "")
+                let strokeAttributes: [NSAttributedString.Key: Any] = [
+                    .font: font,
+                    .foregroundColor: NSColor.clear,
+                    .strokeWidth: 3.0,
+                    .strokeColor: strokeColor
+                ]
+                strokeLabel.attributedStringValue = NSAttributedString(string: lyric, attributes: strokeAttributes)
+                strokeLabel.alignment = .center
+                strokeLabel.isEditable = false
+                strokeLabel.isSelectable = false
+                strokeLabel.drawsBackground = false
+                strokeLabel.translatesAutoresizingMaskIntoConstraints = false
+                
+                let fillLabel = NSTextField(labelWithString: lyric)
+                fillLabel.textColor = .white
+                fillLabel.alignment = .center
+                fillLabel.font = font
+                fillLabel.isEditable = false
+                fillLabel.isSelectable = false
+                fillLabel.drawsBackground = false
+                fillLabel.translatesAutoresizingMaskIntoConstraints = false
+                
+                container.addSubview(strokeLabel)
+                container.addSubview(fillLabel)
                 
                 let closeButton = FloatCloseButton(frame: .zero)
                 closeButton.target = self
@@ -171,9 +191,13 @@ class FloatLyricManager {
                 container.addSubview(closeButton)
                 
                 NSLayoutConstraint.activate([
-                    label.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-                    label.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-                    label.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor, constant: -60),
+                    strokeLabel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+                    strokeLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+                    strokeLabel.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor, constant: -60),
+                    
+                    fillLabel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+                    fillLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+                    fillLabel.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor, constant: -60),
                     
                     closeButton.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
                     closeButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
@@ -185,7 +209,8 @@ class FloatLyricManager {
                 panel.orderFrontRegardless()
                 
                 self.window = panel
-                self.textField = label
+                self.strokeTextField = strokeLabel
+                self.fillTextField = fillLabel
             } else {
                 self.updateLyric(lyric)
                 self.updateOpacity(opacity)
@@ -204,13 +229,23 @@ class FloatLyricManager {
         DispatchQueue.main.async {
             self.window?.orderOut(nil)
             self.window = nil
-            self.textField = nil
+            self.strokeTextField = nil
+            self.fillTextField = nil
         }
     }
     
     func updateLyric(_ lyric: String) {
         DispatchQueue.main.async {
-            self.textField?.stringValue = lyric
+            let font = self.fillTextField?.font ?? NSFont.systemFont(ofSize: 16)
+            let strokeColor = NSColor(red: 24/255.0, green: 144/255.0, blue: 255/255.0, alpha: 1.0)
+            let strokeAttributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: NSColor.clear,
+                .strokeWidth: 3.0,
+                .strokeColor: strokeColor
+            ]
+            self.strokeTextField?.attributedStringValue = NSAttributedString(string: lyric, attributes: strokeAttributes)
+            self.fillTextField?.stringValue = lyric
         }
     }
     
@@ -224,9 +259,21 @@ class FloatLyricManager {
     
     func updateFontSize(_ fontsize: Int32) {
         DispatchQueue.main.async {
-            guard let tf = self.textField else { return }
             let size = CGFloat(fontsize > 0 ? fontsize : 16)
-            tf.font = .systemFont(ofSize: size)
+            let font = NSFont.systemFont(ofSize: size)
+            
+            let strokeColor = NSColor(red: 24/255.0, green: 144/255.0, blue: 255/255.0, alpha: 1.0)
+            let strokeAttributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: NSColor.clear,
+                .strokeWidth: 3.0,
+                .strokeColor: strokeColor
+            ]
+            
+            if let currentText = self.fillTextField?.stringValue {
+                self.strokeTextField?.attributedStringValue = NSAttributedString(string: currentText, attributes: strokeAttributes)
+            }
+            self.fillTextField?.font = font
         }
     }
 }
