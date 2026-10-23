@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:io';
 import 'package:ffi/ffi.dart';
 
 // 显示悬浮歌词
@@ -27,6 +28,33 @@ typedef UpdateOpacity = Void Function(Double opacity);
 typedef UpdateFontSizeDart = void Function(int fontsize);
 typedef UpdateFontSize = Void Function(Int fontsize);
 
-class FFIBridge{
-  
+class FFIBridge {
+  static final DynamicLibrary _dylib = _openDylib();
+
+  static DynamicLibrary _openDylib() {
+    if (Platform.isMacOS) {
+      return DynamicLibrary.open('libFloatLyric.dylib');
+    }
+    throw UnsupportedError('Platform not supported (only macOS is supported)');
+  }
+
+  static final ShowFloatLyricDart showFloatLyric = _dylib
+      .lookup<NativeFunction<ShowFloatLyric>>('ShowFloatLyric')
+      .asFunction<ShowFloatLyricDart>();
+
+  static final HideFloatLyricDart hideFloatLyric = _dylib
+      .lookup<NativeFunction<HideFloatLyric>>('HideFloatLyric')
+      .asFunction<HideFloatLyricDart>();
+
+  static final UpdateLyricDart updateLyric = _dylib
+      .lookup<NativeFunction<UpdateLyric>>('UpdateLyric')
+      .asFunction<UpdateLyricDart>();
+
+  static final UpdateOpacityDart updateOpacity = _dylib
+      .lookup<NativeFunction<UpdateOpacity>>('UpdateOpacity')
+      .asFunction<UpdateOpacityDart>();
+
+  static final UpdateFontSizeDart updateFontSize = _dylib
+      .lookup<NativeFunction<UpdateFontSize>>('UpdateFontSize')
+      .asFunction<UpdateFontSizeDart>();
 }

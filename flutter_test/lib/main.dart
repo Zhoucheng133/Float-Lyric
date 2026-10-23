@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ffi/ffi.dart';
+import 'components/bridge.dart';
 
 void main() {
   runApp(const MainApp());
@@ -14,9 +16,9 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> {
 
-  final TextEditingController lyric = TextEditingController(text: "歌词内容");
-  final TextEditingController fontsize = TextEditingController(text: "12");
-  double opacity=1;
+  final TextEditingController lyric = TextEditingController(text: "正在播放歌词...");
+  final TextEditingController fontsize = TextEditingController(text: "16");
+  double opacity = 1.0;
 
   @override
   Widget build(BuildContext context) {
@@ -24,66 +26,80 @@ class _MainAppState extends State<MainApp> {
       home: Scaffold(
         body: Center(
           child: Column(
-            mainAxisSize: .min,
+            mainAxisSize: MainAxisSize.min,
             spacing: 10,
             children: [
               Row(
-                mainAxisSize: .min,
+                mainAxisSize: MainAxisSize.min,
                 spacing: 10,
                 children: [
                   FilledButton(
-                    onPressed: (){}, 
-                    child: Text("显示歌词")
+                    onPressed: () {
+                      final ptr = lyric.text.toNativeUtf8();
+                      final size = int.tryParse(fontsize.text) ?? 16;
+                      FFIBridge.showFloatLyric(ptr, opacity * 100, size);
+                      calloc.free(ptr);
+                    }, 
+                    child: const Text("显示歌词")
                   ),
                   FilledButton(
-                    onPressed: (){}, 
-                    child: Text("隐藏歌词")
+                    onPressed: () {
+                      FFIBridge.hideFloatLyric();
+                    }, 
+                    child: const Text("隐藏歌词")
                   )
                 ],
               ),
               Padding(
-                padding: .only(left: 20, right: 20),
+                padding: const EdgeInsets.only(left: 20, right: 20),
                 child: TextField(
                   controller: lyric,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                   ),
                 ),
               ),
               TextButton(
-                onPressed: (){}, 
-                child: Text("更新歌词")
+                onPressed: () {
+                  final ptr = lyric.text.toNativeUtf8();
+                  FFIBridge.updateLyric(ptr);
+                  calloc.free(ptr);
+                }, 
+                child: const Text("更新歌词")
               ),
               Padding(
-                padding: .only(left: 20, right: 20),
+                padding: const EdgeInsets.only(left: 20, right: 20),
                 child: Slider(
-                  value: opacity, 
-                  onChanged: (val){
+                  value: opacity,
+                  min: 0.0,
+                  max: 1.0,
+                  onChanged: (val) {
                     setState(() {
-                      opacity=val;
+                      opacity = val;
                     });
+                    FFIBridge.updateOpacity(opacity * 100);
                   }
                 ),
               ),
-              TextButton(
-                onPressed: (){}, 
-                child: Text("更新透明度")
-              ),
+              const Text("更新透明度"),
               Padding(
-                padding: .only(left: 20, right: 20),
+                padding: const EdgeInsets.only(left: 20, right: 20),
                 child: TextField(
                   controller: fontsize,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                   ],
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                   ),
                 ),
               ),
               TextButton(
-                onPressed: (){}, 
-                child: Text("更新字体")
+                onPressed: () {
+                  final size = int.tryParse(fontsize.text) ?? 16;
+                  FFIBridge.updateFontSize(size);
+                }, 
+                child: const Text("更新字体")
               ),
             ],
           )
