@@ -88,6 +88,7 @@ class FloatCloseButton: NSView {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.15
             layer?.backgroundColor = NSColor.red.cgColor
+            label.textColor = NSColor.white
         }
     }
     
@@ -96,6 +97,7 @@ class FloatCloseButton: NSView {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.15
             layer?.backgroundColor = NSColor.clear.cgColor
+            label.textColor = NSColor.gray
         }
     }
     
