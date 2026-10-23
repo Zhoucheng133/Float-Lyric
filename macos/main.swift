@@ -11,9 +11,6 @@ class FloatLyricManager {
     func show(lyric: String, opacity: Double, fontsize: Int32) {
         DispatchQueue.main.async {
             if self.window == nil {
-                let app = NSApplication.shared
-                app.setActivationPolicy(.accessory)
-                
                 let width: CGFloat = 600
                 let height: CGFloat = 80
                 
@@ -39,6 +36,8 @@ class FloatLyricManager {
                 let alpha = opacity > 1.0 ? opacity / 100.0 : (opacity == 1.0 ? 1.0 : opacity)
                 panel.backgroundColor = NSColor.black.withAlphaComponent(max(0.0, min(1.0, alpha)))
                 
+                let container = NSView(frame: NSRect(x: 0, y: 0, width: width, height: height))
+                
                 let label = NSTextField(labelWithString: lyric)
                 label.textColor = .white
                 label.alignment = .center
@@ -46,8 +45,16 @@ class FloatLyricManager {
                 label.isEditable = false
                 label.isSelectable = false
                 label.drawsBackground = false
+                label.translatesAutoresizingMaskIntoConstraints = false
                 
-                panel.contentView = label
+                container.addSubview(label)
+                NSLayoutConstraint.activate([
+                    label.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+                    label.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+                    label.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor, constant: -20)
+                ])
+                
+                panel.contentView = container
                 panel.orderFrontRegardless()
                 
                 self.window = panel
