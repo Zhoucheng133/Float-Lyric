@@ -18,7 +18,8 @@ class _MainAppState extends State<MainApp> {
 
   final TextEditingController lyric = TextEditingController(text: "正在播放歌词...");
   final TextEditingController fontsize = TextEditingController(text: "20");
-  double opacity = 1.0;
+  double opacity = 0.7;
+  bool show=false;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +30,7 @@ class _MainAppState extends State<MainApp> {
             mainAxisSize: MainAxisSize.min,
             spacing: 10,
             children: [
+              Text(show.toString()),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 spacing: 10,
@@ -39,12 +41,18 @@ class _MainAppState extends State<MainApp> {
                       final size = int.tryParse(fontsize.text) ?? 16;
                       FFIBridge.showFloatLyric(ptr, opacity * 100, size);
                       calloc.free(ptr);
+                      setState(() {
+                        show=true;
+                      });
                     }, 
                     child: const Text("显示歌词")
                   ),
                   FilledButton(
                     onPressed: () {
                       FFIBridge.hideFloatLyric();
+                      setState(() {
+                        show=false;
+                      });
                     }, 
                     child: const Text("隐藏歌词")
                   )
