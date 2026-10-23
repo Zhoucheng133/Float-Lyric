@@ -3,7 +3,7 @@ import AppKit
 public typealias CloseCallback = @convention(c) () -> Void
 
 class FloatLyricContainerView: NSView {
-    weak var closeButton: NSButton?
+    weak var closeButton: NSView?
     private var trackingArea: NSTrackingArea?
     
     override func updateTrackingAreas() {
@@ -29,6 +29,80 @@ class FloatLyricContainerView: NSView {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.2
             closeButton?.animator().alphaValue = 0.0
+        }
+    }
+}
+
+class FloatCloseButton: NSView {
+    var target: AnyObject?
+    var action: Selector?
+    
+    private let label = NSTextField(labelWithString: "×")
+    private var trackingArea: NSTrackingArea?
+    
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setup()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+    
+    private func setup() {
+        wantsLayer = true
+        layer?.cornerRadius = 4.0
+        layer?.backgroundColor = NSColor.clear.cgColor
+        
+        label.textColor = .white
+        label.alignment = .center
+        label.font = .systemFont(ofSize: 18, weight: .bold)
+        label.isEditable = false
+        label.isSelectable = false
+        label.drawsBackground = false
+        label.translatesAutoresizingMaskIntoConstraints = false
+        
+        addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: centerXAnchor),
+            label.centerYAnchor.constraint(
+                equalTo: centerYAnchor,
+                constant: -1
+            )
+        ])
+    }
+    
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let existing = trackingArea {
+            removeTrackingArea(existing)
+        }
+        let options: NSTrackingArea.Options = [.mouseEnteredAndExited, .activeAlways, .inVisibleRect]
+        trackingArea = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
+        addTrackingArea(trackingArea!)
+    }
+    
+    override func mouseEntered(with event: NSEvent) {
+        super.mouseEntered(with: event)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            layer?.backgroundColor = NSColor.red.cgColor
+        }
+    }
+    
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            layer?.backgroundColor = NSColor.clear.cgColor
+        }
+    }
+    
+    override func mouseDown(with event: NSEvent) {
+        super.mouseDown(with: event)
+        if let target = target, let action = action {
+            _ = target.perform(action, with: self)
         }
     }
 }
@@ -87,12 +161,7 @@ class FloatLyricManager {
                 
                 container.addSubview(label)
                 
-                let closeButton = NSButton(frame: .zero)
-                closeButton.title = "×"
-                closeButton.bezelStyle = .regularSquare
-                closeButton.isBordered = false
-                closeButton.contentTintColor = .white
-                closeButton.font = .systemFont(ofSize: 18, weight: .bold)
+                let closeButton = FloatCloseButton(frame: .zero)
                 closeButton.target = self
                 closeButton.action = #selector(self.handleCloseClick)
                 closeButton.alphaValue = 0.0
