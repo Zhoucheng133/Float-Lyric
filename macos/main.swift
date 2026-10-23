@@ -2,6 +2,37 @@ import AppKit
 
 public typealias CloseCallback = @convention(c) () -> Void
 
+class FloatLyricContainerView: NSView {
+    weak var closeButton: NSButton?
+    private var trackingArea: NSTrackingArea?
+    
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let existing = trackingArea {
+            removeTrackingArea(existing)
+        }
+        let options: NSTrackingArea.Options = [.mouseEnteredAndExited, .activeAlways, .inVisibleRect]
+        trackingArea = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
+        addTrackingArea(trackingArea!)
+    }
+    
+    override func mouseEntered(with event: NSEvent) {
+        super.mouseEntered(with: event)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            closeButton?.animator().alphaValue = 1.0
+        }
+    }
+    
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            closeButton?.animator().alphaValue = 0.0
+        }
+    }
+}
+
 class FloatLyricManager {
     static let shared = FloatLyricManager()
     
@@ -43,7 +74,7 @@ class FloatLyricManager {
                 let alpha = opacity > 1.0 ? opacity / 100.0 : (opacity == 1.0 ? 1.0 : opacity)
                 panel.backgroundColor = NSColor.black.withAlphaComponent(max(0.0, min(1.0, alpha)))
                 
-                let container = NSView(frame: NSRect(x: 0, y: 0, width: width, height: height))
+                let container = FloatLyricContainerView(frame: NSRect(x: 0, y: 0, width: width, height: height))
                 
                 let label = NSTextField(labelWithString: lyric)
                 label.textColor = .white
@@ -64,8 +95,10 @@ class FloatLyricManager {
                 closeButton.font = .systemFont(ofSize: 18, weight: .bold)
                 closeButton.target = self
                 closeButton.action = #selector(self.handleCloseClick)
+                closeButton.alphaValue = 0.0
                 closeButton.translatesAutoresizingMaskIntoConstraints = false
                 
+                container.closeButton = closeButton
                 container.addSubview(closeButton)
                 
                 NSLayoutConstraint.activate([
