@@ -17,7 +17,7 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
 
   final TextEditingController lyric = TextEditingController(text: "正在播放歌词...");
-  final TextEditingController fontsize = TextEditingController(text: "16");
+  final TextEditingController fontsize = TextEditingController(text: "20");
   double opacity = 1.0;
 
   @override
