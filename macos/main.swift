@@ -71,8 +71,8 @@ class FloatLyricManager {
                 panel.hidesOnDeactivate = false
                 panel.isMovableByWindowBackground = true
                 
-                let alpha = opacity > 1.0 ? opacity / 100.0 : (opacity == 1.0 ? 1.0 : opacity)
-                panel.backgroundColor = NSColor.black.withAlphaComponent(max(0.0, min(1.0, alpha)))
+                let alpha = max(0.0, min(1.0, opacity / 100.0))
+                panel.backgroundColor = NSColor.black.withAlphaComponent(alpha)
                 
                 let container = FloatLyricContainerView(frame: NSRect(x: 0, y: 0, width: width, height: height))
                 
@@ -148,8 +148,8 @@ class FloatLyricManager {
     func updateOpacity(_ opacity: Double) {
         DispatchQueue.main.async {
             guard let panel = self.window else { return }
-            let alpha = opacity > 1.0 ? opacity / 100.0 : (opacity == 1.0 ? 1.0 : opacity)
-            panel.backgroundColor = NSColor.black.withAlphaComponent(max(0.0, min(1.0, alpha)))
+            let alpha = max(0.0, min(1.0, opacity / 100.0))
+            panel.backgroundColor = NSColor.black.withAlphaComponent(alpha)
         }
     }
     
