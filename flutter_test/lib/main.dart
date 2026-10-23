@@ -18,7 +18,7 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
 
   final TextEditingController lyric = TextEditingController(text: "正在播放歌词...");
-  final TextEditingController fontsize = TextEditingController(text: "20");
+  final TextEditingController fontsize = TextEditingController(text: "25");
   double opacity = 0.7;
   bool show=false;
   NativeCallable<CloseCallbackFFI>? _closeCallable;
