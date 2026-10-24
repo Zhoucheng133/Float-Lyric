@@ -60,7 +60,7 @@ class _MainAppState extends State<MainApp> {
                     onPressed: () {
                       final ptr = lyric.text.toNativeUtf8();
                       final size = int.tryParse(fontsize.text) ?? 16;
-                      FFIBridge.showFloatLyric(ptr, opacity * 100, size);
+                      FFIBridge.showFloatLyric(ptr, opacity * 100, size, 24, 144, 255);
                       calloc.free(ptr);
                       setState(() {
                         show=true;

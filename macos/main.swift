@@ -116,6 +116,7 @@ class FloatLyricManager {
     private var strokeTextField: NSTextField?
     private var fillTextField: NSTextField?
     private var closeCallback: CloseCallback?
+    private var strokeColor: NSColor = NSColor(red: 24/255.0, green: 144/255.0, blue: 255/255.0, alpha: 1.0)
     
     private init() {}
     
@@ -123,7 +124,9 @@ class FloatLyricManager {
         self.closeCallback = callback
     }
     
-    func show(lyric: String, opacity: Double, fontsize: Int32) {
+    func show(lyric: String, opacity: Double, fontsize: Int32, r: Int32, g: Int32, b: Int32) {
+        let newStrokeColor = NSColor(red: CGFloat(r) / 255.0, green: CGFloat(g) / 255.0, blue: CGFloat(b) / 255.0, alpha: 1.0)
+        self.strokeColor = newStrokeColor
         DispatchQueue.main.async {
             if self.window == nil {
                 let width: CGFloat = 600
@@ -155,7 +158,7 @@ class FloatLyricManager {
                 
                 let fontSize = CGFloat(fontsize > 0 ? fontsize : 16)
                 let font = NSFont.systemFont(ofSize: fontSize)
-                let strokeColor = NSColor(red: 24/255.0, green: 144/255.0, blue: 255/255.0, alpha: 1.0)
+                let strokeColor = newStrokeColor
                 
                 let strokeLabel = NSTextField(labelWithString: "")
                 let strokeAttributes: [NSAttributedString.Key: Any] = [
@@ -217,6 +220,7 @@ class FloatLyricManager {
                 self.updateLyric(lyric)
                 self.updateOpacity(opacity)
                 self.updateFontSize(fontsize)
+                self.updateStrokeColor(r, g, b)
                 self.window?.orderFrontRegardless()
             }
         }
@@ -239,7 +243,7 @@ class FloatLyricManager {
     func updateLyric(_ lyric: String) {
         DispatchQueue.main.async {
             let font = self.fillTextField?.font ?? NSFont.systemFont(ofSize: 16)
-            let strokeColor = NSColor(red: 24/255.0, green: 144/255.0, blue: 255/255.0, alpha: 1.0)
+            let strokeColor = self.strokeColor
             let strokeAttributes: [NSAttributedString.Key: Any] = [
                 .font: font,
                 .foregroundColor: NSColor.clear,
@@ -264,7 +268,7 @@ class FloatLyricManager {
             let size = CGFloat(fontsize > 0 ? fontsize : 16)
             let font = NSFont.systemFont(ofSize: size)
             
-            let strokeColor = NSColor(red: 24/255.0, green: 144/255.0, blue: 255/255.0, alpha: 1.0)
+            let strokeColor = self.strokeColor
             let strokeAttributes: [NSAttributedString.Key: Any] = [
                 .font: font,
                 .foregroundColor: NSColor.clear,
@@ -278,14 +282,31 @@ class FloatLyricManager {
             self.fillTextField?.font = font
         }
     }
+    
+    func updateStrokeColor(_ r: Int32, _ g: Int32, _ b: Int32) {
+        let newStrokeColor = NSColor(red: CGFloat(r) / 255.0, green: CGFloat(g) / 255.0, blue: CGFloat(b) / 255.0, alpha: 1.0)
+        self.strokeColor = newStrokeColor
+        DispatchQueue.main.async {
+            let font = self.fillTextField?.font ?? NSFont.systemFont(ofSize: 16)
+            let strokeAttributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: NSColor.clear,
+                .strokeWidth: 6.0,
+                .strokeColor: newStrokeColor
+            ]
+            if let currentText = self.fillTextField?.stringValue {
+                self.strokeTextField?.attributedStringValue = NSAttributedString(string: currentText, attributes: strokeAttributes)
+            }
+        }
+    }
 }
 
 private let manager = FloatLyricManager.shared
 
 @_cdecl("ShowFloatLyric")
-public func ShowFloatLyric(_ lyric: UnsafePointer<CChar>?, _ opacity: Double, _ fontsize: Int32) {
+public func ShowFloatLyric(_ lyric: UnsafePointer<CChar>?, _ opacity: Double, _ fontsize: Int32, _ r: Int32, _ g: Int32, _ b: Int32) {
     let lyricStr = lyric != nil ? String(cString: lyric!) : ""
-    manager.show(lyric: lyricStr, opacity: opacity, fontsize: fontsize)
+    manager.show(lyric: lyricStr, opacity: opacity, fontsize: fontsize, r: r, g: g, b: b)
 }
 
 @_cdecl("HideFloatLyric")
@@ -307,6 +328,11 @@ public func UpdateOpacity(_ opacity: Double) {
 @_cdecl("UpdateFontSize")
 public func UpdateFontSize(_ fontsize: Int32) {
     manager.updateFontSize(fontsize)
+}
+
+@_cdecl("UpdateStrokeColor")
+public func UpdateStrokeColor(_ r: Int32, _ g: Int32, _ b: Int32) {
+    manager.updateStrokeColor(r, g, b)
 }
 
 @_cdecl("RegisterCloseCallback")

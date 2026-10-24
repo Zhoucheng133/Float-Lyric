@@ -6,8 +6,11 @@ import 'package:ffi/ffi.dart';
 // [lyric] 歌词
 // [opacity] 透明度(double 0~100)
 // [fontsize] 字体大小
-typedef ShowFloatLyricDart = void Function(Pointer<Utf8> lyric, double opacity, int fontsize);
-typedef ShowFloatLyric = Void Function(Pointer<Utf8> lyric, Double opacity, Int fontsize);
+// [r] 红色分量
+// [g] 绿色分量
+// [b] 蓝色分量
+typedef ShowFloatLyricDart = void Function(Pointer<Utf8> lyric, double opacity, int fontsize, int r, int g, int b);
+typedef ShowFloatLyric = Void Function(Pointer<Utf8> lyric, Double opacity, Int fontsize, Int r, Int g, Int b);
 
 // 隐藏悬浮歌词
 typedef HideFloatLyricDart = void Function();
@@ -27,6 +30,10 @@ typedef UpdateOpacity = Void Function(Double opacity);
 // [fontsize] 字体大小
 typedef UpdateFontSizeDart = void Function(int fontsize);
 typedef UpdateFontSize = Void Function(Int fontsize);
+
+// 更新描边颜色
+typedef UpdateStrokeColorDart = void Function(int r, int g, int b);
+typedef UpdateStrokeColor = Void Function(Int r, Int g, Int b);
 
 // 注册关闭回调
 typedef CloseCallbackDart = void Function();
@@ -64,6 +71,10 @@ class FFIBridge {
   static final UpdateFontSizeDart updateFontSize = _dylib
       .lookup<NativeFunction<UpdateFontSize>>('UpdateFontSize')
       .asFunction<UpdateFontSizeDart>();
+
+  static final UpdateStrokeColorDart updateStrokeColor = _dylib
+      .lookup<NativeFunction<UpdateStrokeColor>>('UpdateStrokeColor')
+      .asFunction<UpdateStrokeColorDart>();
 
   static final RegisterCloseCallbackDart registerCloseCallback = _dylib
       .lookup<NativeFunction<RegisterCloseCallback>>('RegisterCloseCallback')
