@@ -5,6 +5,7 @@
 ### macOS
 
 ```bash
+# Move to: flutter_test\macos\libFloatLyric.dylib
 cd macos &&
 xcrun swiftc \
   -target arm64-apple-macosx12.0 \
@@ -16,5 +17,6 @@ xcrun swiftc \
 ### Windows
 
 ```bash
+# Move to: flutter_test\windows\libFloatLyric.dll
 go build -buildmode=c-shared -ldflags="-s -w" -o build/libFloatLyric.dll
 ```
