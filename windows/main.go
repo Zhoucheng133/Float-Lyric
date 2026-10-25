@@ -295,8 +295,7 @@ func wndProc(hwnd win.HWND, msg uint32, wParam, lParam uintptr) uintptr {
 		}
 
 		win.ReleaseCapture()
-		win.SendMessage(hwnd, 0xA1, 2, 0)
-		return 0
+		return win.SendMessage(hwnd, win.WM_NCLBUTTONDOWN, win.HTCAPTION, 0)
 
 	case win.WM_DESTROY:
 		win.PostQuitMessage(0)
