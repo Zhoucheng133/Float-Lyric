@@ -48,8 +48,10 @@ class FFIBridge {
   static DynamicLibrary _openDylib() {
     if (Platform.isMacOS) {
       return DynamicLibrary.open('libFloatLyric.dylib');
+    } else if (Platform.isWindows) {
+      return DynamicLibrary.open('libFloatLyric.dll');
     }
-    throw UnsupportedError('Platform not supported (only macOS is supported)');
+    throw UnsupportedError('Platform not supported');
   }
 
   static final ShowFloatLyricDart showFloatLyric = _dylib
