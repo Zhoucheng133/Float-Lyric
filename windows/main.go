@@ -19,6 +19,22 @@ var (
 	procDrawTextW                = user32.MustFindProc("DrawTextW")
 	procCreateSolidBrush         = gdi32.MustFindProc("CreateSolidBrush")
 	procCreateFontW              = gdi32.MustFindProc("CreateFontW")
+	procUpdateLayeredWindow      = user32.MustFindProc("UpdateLayeredWindow")
+	procGetCurrentObject         = gdi32.MustFindProc("GetCurrentObject")
+	procGetObjectW               = gdi32.MustFindProc("GetObjectW")
+)
+
+const (
+	IDC_ARROW   = 32512
+	IDC_HAND    = 32649
+	OBJ_BITMAP  = 7
+	ULW_ALPHA   = 2
+	AC_SRC_OVER = 0x00
+)
+
+var (
+	hCursorArrow win.HCURSOR
+	hCursorHand  win.HCURSOR
 )
 
 var (
@@ -29,6 +45,7 @@ var (
 	fontsize    int32   = 16
 	strokeColor         = color.RGBA{R: 24, G: 144, B: 255, A: 255}
 	isShown     bool
+	mouseHover  bool
 )
 
 type CloseCallback func()
@@ -88,7 +105,7 @@ func UpdateOpacity(op float64) {
 	mu.Lock()
 	opacity = op
 	mu.Unlock()
-	setWindowOpacity()
+	redraw()
 }
 
 //export UpdateFontSize
@@ -123,7 +140,9 @@ func startWindowLoop() {
 	wc.Style = win.CS_HREDRAW | win.CS_VREDRAW
 	wc.LpfnWndProc = syscall.NewCallback(wndProc)
 	wc.HInstance = win.GetModuleHandle(nil)
-	wc.HCursor = win.LoadCursor(0, syscall.StringToUTF16Ptr("IDC_ARROW"))
+	hCursorArrow = win.LoadCursor(0, syscall.StringToUTF16Ptr("#32512"))
+	hCursorHand = win.LoadCursor(0, syscall.StringToUTF16Ptr("#32649"))
+	wc.HCursor = hCursorArrow
 	wc.HbrBackground = win.HBRUSH(win.GetStockObject(win.BLACK_BRUSH))
 	wc.LpszClassName = className
 
@@ -138,7 +157,7 @@ func startWindowLoop() {
 	y := screenHeight - height - 120
 
 	h := win.CreateWindowEx(
-		win.WS_EX_LAYERED|win.WS_EX_TOPMOST|win.WS_EX_TOOLWINDOW|win.WS_EX_TRANSPARENT,
+		win.WS_EX_LAYERED|win.WS_EX_TOPMOST|win.WS_EX_TOOLWINDOW,
 		className,
 		syscall.StringToUTF16Ptr("Float Lyric"),
 		win.WS_POPUP,
@@ -153,7 +172,6 @@ func startWindowLoop() {
 
 	if shown {
 		win.ShowWindow(h, win.SW_SHOW)
-		setWindowOpacity()
 		redraw()
 	}
 
@@ -162,27 +180,6 @@ func startWindowLoop() {
 		win.TranslateMessage(&msg)
 		win.DispatchMessage(&msg)
 	}
-}
-
-func setWindowOpacity() {
-	mu.Lock()
-	h := hwnd
-	op := opacity
-	mu.Unlock()
-
-	if h == 0 {
-		return
-	}
-	alpha := byte(255)
-	if op >= 0 && op <= 100 {
-		alpha = byte(op * 255 / 100)
-	}
-	procSetLayerWindowAttributes.Call(
-		uintptr(h),
-		0,
-		uintptr(alpha),
-		2,
-	)
 }
 
 func redraw() {
@@ -207,27 +204,108 @@ func wndProc(hwnd win.HWND, msg uint32, wParam, lParam uintptr) uintptr {
 		text := lyric
 		fs := fontsize
 		sc := strokeColor
+		hover := mouseHover
 		mu.Unlock()
 
-		drawLyricToHDC(hwnd, hdc, text, fs, sc)
+		drawLyricToHDC(hwnd, hdc, text, fs, sc, hover)
 		return 0
 
+	case win.WM_MOUSEMOVE:
+		mu.Lock()
+		hover := mouseHover
+		mu.Unlock()
+
+		if !hover {
+			mu.Lock()
+			mouseHover = true
+			mu.Unlock()
+			var tme win.TRACKMOUSEEVENT
+			tme.CbSize = uint32(unsafe.Sizeof(tme))
+			tme.DwFlags = win.TME_LEAVE
+			tme.HwndTrack = hwnd
+			win.TrackMouseEvent(&tme)
+			redraw()
+		}
+
+		var pt win.POINT
+		win.GetCursorPos(&pt)
+		win.ScreenToClient(hwnd, &pt)
+		var rect win.RECT
+		win.GetClientRect(hwnd, &rect)
+		closeBtnRect := win.RECT{
+			Left:   rect.Right - 36,
+			Top:    rect.Top + 6,
+			Right:  rect.Right - 12,
+			Bottom: rect.Top + 30,
+		}
+		if pt.X >= closeBtnRect.Left && pt.X <= closeBtnRect.Right && pt.Y >= closeBtnRect.Top && pt.Y <= closeBtnRect.Bottom {
+			win.SetCursor(hCursorHand)
+		} else {
+			win.SetCursor(hCursorArrow)
+		}
+		return 0
+
+	case win.WM_MOUSELEAVE:
+		mu.Lock()
+		mouseHover = false
+		mu.Unlock()
+		win.SetCursor(hCursorArrow)
+		redraw()
+		return 0
+
+	case win.WM_SETCURSOR:
+		if win.LOWORD(uint32(lParam)) == win.HTCLIENT {
+			var pt win.POINT
+			win.GetCursorPos(&pt)
+			win.ScreenToClient(hwnd, &pt)
+			var rect win.RECT
+			win.GetClientRect(hwnd, &rect)
+			closeBtnRect := win.RECT{
+				Left:   rect.Right - 36,
+				Top:    rect.Top + 6,
+				Right:  rect.Right - 12,
+				Bottom: rect.Top + 30,
+			}
+			if pt.X >= closeBtnRect.Left && pt.X <= closeBtnRect.Right && pt.Y >= closeBtnRect.Top && pt.Y <= closeBtnRect.Bottom {
+				win.SetCursor(hCursorHand)
+				return 1
+			}
+		}
+		return win.DefWindowProc(hwnd, msg, wParam, lParam)
+
 	case win.WM_LBUTTONDOWN:
+		var pt win.POINT
+		win.GetCursorPos(&pt)
+		clientPt := pt
+		win.ScreenToClient(hwnd, &clientPt)
+		var rect win.RECT
+		win.GetClientRect(hwnd, &rect)
+		closeBtnRect := win.RECT{
+			Left:   rect.Right - 36,
+			Top:    rect.Top + 6,
+			Right:  rect.Right - 12,
+			Bottom: rect.Top + 30,
+		}
+		if clientPt.X >= closeBtnRect.Left && clientPt.X <= closeBtnRect.Right && clientPt.Y >= closeBtnRect.Top && clientPt.Y <= closeBtnRect.Bottom {
+			HideFloatLyric()
+			if closeCallbackFn != nil {
+				go closeCallbackFn()
+			}
+			return 0
+		}
+
 		win.ReleaseCapture()
 		win.SendMessage(hwnd, 0xA1, 2, 0)
 		return 0
 
 	case win.WM_DESTROY:
 		win.PostQuitMessage(0)
-		if closeCallbackFn != nil {
-			closeCallbackFn()
-		}
 		return 0
 	}
 	return win.DefWindowProc(hwnd, msg, wParam, lParam)
 }
 
-func drawLyricToHDC(hwnd win.HWND, hdc win.HDC, text string, fontsize int32, strokeColor color.RGBA) {
+func drawLyricToHDC(hwnd win.HWND, hdc win.HDC, text string, fontsize int32, strokeColor color.RGBA, hover bool) {
 	var rect win.RECT
 	win.GetClientRect(hwnd, &rect)
 	width := int(rect.Right - rect.Left)
@@ -262,8 +340,52 @@ func drawLyricToHDC(hwnd win.HWND, hdc win.HDC, text string, fontsize int32, str
 	procFillRect.Call(uintptr(memDC), uintptr(unsafe.Pointer(&rect)), uintptr(brush))
 	win.DeleteObject(win.HGDIOBJ(brush))
 
+	if hover {
+		closeBtnRect := win.RECT{
+			Left:   rect.Right - 36,
+			Top:    rect.Top + 6,
+			Right:  rect.Right - 12,
+			Bottom: rect.Top + 30,
+		}
+		btnBrush, _, _ := procCreateSolidBrush.Call(uintptr(0x3C4CE7)) // Red in BGR
+		hBtnBrush := win.HBRUSH(btnBrush)
+		procFillRect.Call(uintptr(memDC), uintptr(unsafe.Pointer(&closeBtnRect)), uintptr(hBtnBrush))
+		win.DeleteObject(win.HGDIOBJ(hBtnBrush))
+
+		var hFontVal int32 = -16
+		fontRet2, _, _ := procCreateFontW.Call(
+			uintptr(hFontVal),
+			0, 0, 0,
+			uintptr(win.FW_BOLD),
+			0, 0, 0,
+			uintptr(win.DEFAULT_CHARSET),
+			uintptr(win.OUT_DEFAULT_PRECIS),
+			uintptr(win.CLIP_DEFAULT_PRECIS),
+			uintptr(win.ANTIALIASED_QUALITY),
+			uintptr(win.DEFAULT_PITCH),
+			uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Arial"))),
+		)
+		hFont2 := win.HFONT(fontRet2)
+		if hFont2 != 0 {
+			oldFont2 := win.SelectObject(memDC, win.HGDIOBJ(hFont2))
+			win.SetBkMode(memDC, win.TRANSPARENT)
+			win.SetTextColor(memDC, win.RGB(255, 255, 255))
+			closeText, _ := syscall.UTF16FromString("×")
+			procDrawTextW.Call(
+				uintptr(memDC),
+				uintptr(unsafe.Pointer(&closeText[0])),
+				uintptr(len(closeText)-1),
+				uintptr(unsafe.Pointer(&closeBtnRect)),
+				uintptr(win.DT_CENTER|win.DT_VCENTER|win.DT_SINGLELINE),
+			)
+			win.SelectObject(memDC, oldFont2)
+			win.DeleteObject(win.HGDIOBJ(hFont2))
+		}
+	}
+
+	var fsVal int32 = -int32(fontsize)
 	fontRet, _, _ := procCreateFontW.Call(
-		uintptr(-int32(fontsize)),
+		uintptr(fsVal),
 		0, 0, 0,
 		uintptr(win.FW_BOLD),
 		0, 0, 0,
@@ -322,7 +444,64 @@ func drawLyricToHDC(hwnd win.HWND, hdc win.HDC, text string, fontsize int32, str
 		uintptr(win.DT_CENTER|win.DT_VCENTER|win.DT_SINGLELINE),
 	)
 
-	win.BitBlt(hdc, 0, 0, int32(width), int32(height), memDC, 0, 0, win.SRCCOPY)
+	updateLayeredWindowWithAlpha(hwnd, hdc, memDC, width, height)
+}
+
+func updateLayeredWindowWithAlpha(hwnd win.HWND, hdc win.HDC, memDC win.HDC, width, height int) {
+	mu.Lock()
+	op := opacity
+	mu.Unlock()
+
+	bgAlpha := byte(op * 255 / 100)
+
+	hBmpObj, _, _ := procGetCurrentObject.Call(uintptr(memDC), uintptr(OBJ_BITMAP))
+	var bm win.BITMAP
+	procGetObjectW.Call(hBmpObj, uintptr(unsafe.Sizeof(bm)), uintptr(unsafe.Pointer(&bm)))
+
+	if bm.BmBits == nil {
+		win.BitBlt(hdc, 0, 0, int32(width), int32(height), memDC, 0, 0, win.SRCCOPY)
+		return
+	}
+
+	pixels := (*[1 << 30]byte)(bm.BmBits)[: width * height * 4 : width * height * 4]
+
+	for i := 0; i < len(pixels); i += 4 {
+		b := pixels[i]
+		g := pixels[i+1]
+		r := pixels[i+2]
+
+		if r == 0 && g == 0 && b == 0 {
+			pixels[i+3] = bgAlpha
+		} else {
+			pixels[i+3] = 255
+		}
+	}
+
+	var ptSrc win.POINT
+	psize := win.SIZE{CX: int32(width), CY: int32(height)}
+
+	var blend struct {
+		BlendOp             byte
+		BlendFlags          byte
+		SourceConstantAlpha byte
+		AlphaFormat         byte
+	}
+	blend.BlendOp = AC_SRC_OVER
+	blend.BlendFlags = 0
+	blend.SourceConstantAlpha = 255
+	blend.AlphaFormat = 0x01 // AC_SRC_ALPHA
+
+	procUpdateLayeredWindow.Call(
+		uintptr(hwnd),
+		0,
+		0,
+		uintptr(unsafe.Pointer(&psize)),
+		uintptr(memDC),
+		uintptr(unsafe.Pointer(&ptSrc)),
+		0,
+		uintptr(unsafe.Pointer(&blend)),
+		uintptr(2), // ULW_ALPHA
+	)
 }
 
 func main() {}
