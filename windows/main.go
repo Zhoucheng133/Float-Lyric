@@ -3,7 +3,6 @@ package main
 import "C"
 import (
 	"image/color"
-	"log"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -191,13 +190,11 @@ func redraw() {
 	if h == 0 {
 		return
 	}
-	win.InvalidateRect(h, nil, false)
+	win.InvalidateRect(h, nil, true)
 }
 
 func wndProc(hwnd win.HWND, msg uint32, wParam, lParam uintptr) uintptr {
 	switch msg {
-	case win.WM_ERASEBKGND:
-		return 1
 	case win.WM_PAINT:
 		var ps win.PAINTSTRUCT
 		hdc := win.BeginPaint(hwnd, &ps)
@@ -457,8 +454,6 @@ func updateLayeredWindowWithAlpha(hwnd win.HWND, hdc win.HDC, memDC win.HDC, wid
 	mu.Unlock()
 
 	bgAlpha := byte(op * 255 / 100)
-
-	log.Printf("opacity=%.2f, bgAlpha=%d", op, bgAlpha)
 
 	hBmpObj, _, _ := procGetCurrentObject.Call(uintptr(memDC), uintptr(OBJ_BITMAP))
 	var bm win.BITMAP
