@@ -3,6 +3,7 @@ package main
 import "C"
 import (
 	"image/color"
+	"log"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -508,7 +509,7 @@ func updateLayeredWindowWithAlpha(hwnd win.HWND, hdc win.HDC, memDC win.HDC, wid
 	blend.SourceConstantAlpha = 255
 	blend.AlphaFormat = 0x01
 
-	procUpdateLayeredWindow.Call(
+	ret, _, err := procUpdateLayeredWindow.Call(
 		uintptr(hwnd),
 		0,
 		0,
@@ -517,8 +518,16 @@ func updateLayeredWindowWithAlpha(hwnd win.HWND, hdc win.HDC, memDC win.HDC, wid
 		uintptr(unsafe.Pointer(&ptSrc)),
 		0,
 		uintptr(unsafe.Pointer(&blend)),
-		uintptr(2), // ULW_ALPHA
+		uintptr(ULW_ALPHA),
 	)
+
+	if ret == 0 {
+		log.Printf(
+			"UpdateLayeredWindow failed: hwnd=%v, err=%v",
+			hwnd,
+			err,
+		)
+	}
 }
 
 func main() {}
