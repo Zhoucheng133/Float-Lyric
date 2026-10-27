@@ -164,7 +164,7 @@ class FloatLyricManager {
                 let strokeAttributes: [NSAttributedString.Key: Any] = [
                     .font: font,
                     .foregroundColor: NSColor.clear,
-                    .strokeWidth: 6.0,
+                    .strokeWidth: 8.0,
                     .strokeColor: strokeColor
                 ]
                 strokeLabel.attributedStringValue = NSAttributedString(string: lyric, attributes: strokeAttributes)
@@ -247,7 +247,7 @@ class FloatLyricManager {
             let strokeAttributes: [NSAttributedString.Key: Any] = [
                 .font: font,
                 .foregroundColor: NSColor.clear,
-                .strokeWidth: 6.0,
+                .strokeWidth: 8.0,
                 .strokeColor: strokeColor
             ]
             self.strokeTextField?.attributedStringValue = NSAttributedString(string: lyric, attributes: strokeAttributes)
@@ -272,7 +272,7 @@ class FloatLyricManager {
             let strokeAttributes: [NSAttributedString.Key: Any] = [
                 .font: font,
                 .foregroundColor: NSColor.clear,
-                .strokeWidth: 6.0,
+                .strokeWidth: 8.0,
                 .strokeColor: strokeColor
             ]
             
@@ -291,7 +291,7 @@ class FloatLyricManager {
             let strokeAttributes: [NSAttributedString.Key: Any] = [
                 .font: font,
                 .foregroundColor: NSColor.clear,
-                .strokeWidth: 6.0,
+                .strokeWidth: 8.0,
                 .strokeColor: newStrokeColor
             ]
             if let currentText = self.fillTextField?.stringValue {
