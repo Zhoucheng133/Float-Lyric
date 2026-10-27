@@ -472,9 +472,25 @@ func updateLayeredWindowWithAlpha(hwnd win.HWND, hdc win.HDC, memDC win.HDC, wid
 		r := pixels[i+2]
 
 		if r == 0 && g == 0 && b == 0 {
+			pixels[i] = 0
+			pixels[i+1] = 0
+			pixels[i+2] = 0
 			pixels[i+3] = bgAlpha
 		} else {
-			pixels[i+3] = 255
+			maxVal := r
+			if g > maxVal {
+				maxVal = g
+			}
+			if b > maxVal {
+				maxVal = b
+			}
+			alpha := maxVal
+
+			// 关键修复：必须进行预乘 Alpha 计算 (Color * Alpha / 255)
+			pixels[i] = byte(uint32(b) * uint32(alpha) / 255)
+			pixels[i+1] = byte(uint32(g) * uint32(alpha) / 255)
+			pixels[i+2] = byte(uint32(r) * uint32(alpha) / 255)
+			pixels[i+3] = alpha
 		}
 	}
 
@@ -490,7 +506,7 @@ func updateLayeredWindowWithAlpha(hwnd win.HWND, hdc win.HDC, memDC win.HDC, wid
 	blend.BlendOp = AC_SRC_OVER
 	blend.BlendFlags = 0
 	blend.SourceConstantAlpha = 255
-	blend.AlphaFormat = 0x01 // AC_SRC_ALPHA
+	blend.AlphaFormat = 0x01
 
 	procUpdateLayeredWindow.Call(
 		uintptr(hwnd),
