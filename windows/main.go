@@ -151,8 +151,8 @@ func startWindowLoop() {
 	screenWidth := win.GetSystemMetrics(win.SM_CXSCREEN)
 	screenHeight := win.GetSystemMetrics(win.SM_CYSCREEN)
 
-	width := int32(600)
-	height := int32(80)
+	width := int32(800)
+	height := int32(100)
 	x := (screenWidth - width) / 2
 	y := screenHeight - height - 120
 
@@ -419,6 +419,8 @@ func drawLyricToHDC(hwnd win.HWND, hdc win.HDC, text string, fontsize int32, str
 		{-1, 1}, {0, 1}, {1, 1},
 	}
 
+	flags := uintptr(win.DT_CENTER | win.DT_VCENTER | win.DT_SINGLELINE | win.DT_END_ELLIPSIS)
+
 	for _, off := range offsets {
 		rCopy := rect
 		rCopy.Left += int32(off.dx * 2)
@@ -430,7 +432,7 @@ func drawLyricToHDC(hwnd win.HWND, hdc win.HDC, text string, fontsize int32, str
 			uintptr(unsafe.Pointer(&utf16Text[0])),
 			uintptr(textLen),
 			uintptr(unsafe.Pointer(&rCopy)),
-			uintptr(win.DT_CENTER|win.DT_VCENTER|win.DT_SINGLELINE),
+			flags,
 		)
 	}
 
@@ -440,7 +442,7 @@ func drawLyricToHDC(hwnd win.HWND, hdc win.HDC, text string, fontsize int32, str
 		uintptr(unsafe.Pointer(&utf16Text[0])),
 		uintptr(textLen),
 		uintptr(unsafe.Pointer(&rect)),
-		uintptr(win.DT_CENTER|win.DT_VCENTER|win.DT_SINGLELINE),
+		flags,
 	)
 
 	updateLayeredWindowWithAlpha(hwnd, hdc, memDC, width, height)
@@ -462,7 +464,7 @@ func updateLayeredWindowWithAlpha(hwnd win.HWND, hdc win.HDC, memDC win.HDC, wid
 		return
 	}
 
-	pixels := (*[1 << 30]byte)(bm.BmBits)[: width * height * 4 : width * height * 4]
+	pixels := (*[1 << 30]byte)(bm.BmBits)[: width*height*4 : width*height*4]
 
 	for i := 0; i < len(pixels); i += 4 {
 		b := pixels[i]
