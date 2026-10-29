@@ -3,6 +3,7 @@ package main
 import "C"
 import (
 	"image/color"
+	"runtime"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -134,6 +135,9 @@ func RegisterCloseCallback(cb uintptr) {
 }
 
 func startWindowLoop() {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	className := syscall.StringToUTF16Ptr("FloatLyricWindow")
 	var wc win.WNDCLASSEX
 	wc.CbSize = uint32(unsafe.Sizeof(wc))
@@ -176,7 +180,11 @@ func startWindowLoop() {
 	}
 
 	var msg win.MSG
-	for win.GetMessage(&msg, 0, 0, 0) != 0 {
+	for {
+		ret := win.GetMessage(&msg, 0, 0, 0)
+		if ret <= 0 {
+			break
+		}
 		win.TranslateMessage(&msg)
 		win.DispatchMessage(&msg)
 	}
@@ -401,8 +409,8 @@ func drawLyricToHDC(hwnd win.HWND, hdc win.HDC, text string, fontsize int32, str
 	hFont := win.HFONT(fontRet)
 	if hFont != 0 {
 		oldFont := win.SelectObject(memDC, win.HGDIOBJ(hFont))
-		defer win.SelectObject(memDC, oldFont)
 		defer win.DeleteObject(win.HGDIOBJ(hFont))
+		defer win.SelectObject(memDC, oldFont)
 	}
 
 	win.SetBkMode(memDC, win.TRANSPARENT)
