@@ -370,11 +370,14 @@ func drawLyricToHDC(hwnd win.HWND, hdc win.HDC, text string, fontsize int32, str
 			win.SetBkMode(memDC, win.TRANSPARENT)
 			win.SetTextColor(memDC, win.RGB(255, 255, 255))
 			closeText, _ := syscall.UTF16FromString("×")
+			closeTextRect := closeBtnRect
+			closeTextRect.Left += 1
+			closeTextRect.Right += 1
 			procDrawTextW.Call(
 				uintptr(memDC),
 				uintptr(unsafe.Pointer(&closeText[0])),
 				uintptr(len(closeText)-1),
-				uintptr(unsafe.Pointer(&closeBtnRect)),
+				uintptr(unsafe.Pointer(&closeTextRect)),
 				uintptr(win.DT_CENTER|win.DT_VCENTER|win.DT_SINGLELINE),
 			)
 			win.SelectObject(memDC, oldFont2)
